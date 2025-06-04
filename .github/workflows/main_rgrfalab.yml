@@ -35,12 +35,20 @@ jobs:
           source venv/bin/activate
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -t ./package
 
-      # Optional: Add step to run tests here
+      - name: Copy function app files to package folder
+        run: |
+          cp -r *.py host.json requirements.txt ./package
 
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
+        run: |
+          cd package
+          zip -r ../release.zip .
+
+      # Optional: Add step to run tests here
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -58,6 +66,15 @@ jobs:
       contents: read #This is required for actions/checkout
 
     steps:
+
+
+      - name: Disable remote build
+        run: |
+          az functionapp config appsettings set \
+          --name rgrfalab \
+          --resource-group <YourResourceGroup> \
+          --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
